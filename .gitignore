@@ -1,4 +1,3 @@
-### Executable ###
 *.app
 *.bat
 *.cgi
@@ -9,3 +8,4 @@
 *.pif
 *.vb
 *.wsf
+*.ch8
