@@ -1,7 +1,8 @@
 #include<stdio.h>
 #include<stdlib.h>
 
-#include "chip8.h"
+#include "include/chip8.h"
+#include <SDL2/SDL.h>
 
 unsigned char memory[4096] = {0};
 
@@ -40,7 +41,7 @@ unsigned short stack[16] = {0};
 
 unsigned char sp = 0;
 
-int main()
+int main(int argc, char **argv)
 {
     FILE *rom;
     rom = fopen("Logo.ch8", "rb");
@@ -104,7 +105,9 @@ void decode(unsigned short opcode) {
     unsigned short second = (opcode & mask2) >> 8;
     unsigned short third = (opcode & mask3) >> 4;
     unsigned short fourth = opcode & mask4;
-    printf("First is %x\n", first);
+    printf("Sections are %x %x %x %x\n", first, second, third, fourth);
+    unsigned short addr = (second << 8) | (third << 4) | fourth;
+    unsigned short value = (third << 4) | fourth;
 
     switch (first)
     {
@@ -117,20 +120,26 @@ void decode(unsigned short opcode) {
     case 0x1:
         // jump
         ;
-        short addr = second | third | fourth;
         printf("Jump to %x\n", addr);
+        pc = 0x200 + addr;
         break;
     case 0x6:
         // set register
-        printf("Set register %x to %x\n", second, (third | fourth));
+        printf("Set register %x to %x\n", second, value);
+        v[second] = value;
         break;
     case 0x7:
-        printf("Add to register %x: %x\n", second, (third | fourth));
+        // add to register
+        printf("Add to register %x: %x\n", second, value);
+        v[second] += value;
         break;
     case 0xA:
-        printf("Set index register %x\n", ((second | third) | fourth));
+        // set index register
+        printf("Set index register to %x\n", addr);
+        ir = addr;
         break;
     case 0xD:
+        // Draw on screen
         printf("Draw %x %x %x\n", second, third, fourth);
         break;
     default:
