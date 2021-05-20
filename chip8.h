@@ -1,2 +1,2 @@
 void cycle();
-void decode(short opcode);
+void decode(unsigned short opcode);

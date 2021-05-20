@@ -5,6 +5,8 @@
 
 unsigned char memory[4096] = {0};
 
+unsigned short opcode = 0;
+
 unsigned short pc = 0x200;
 
 unsigned short ir = 0x0;
@@ -62,11 +64,11 @@ int main()
     }
     // loading start
     for(int i = 0; i < size; i++){
-        memory[i + 0x200] = buffer[i];
-        printf("0x%x ", buffer[i]);
+        unsigned char c = buffer[i];
+        memory[i + 0x200] = c;
+        printf("0x%x ", memory[i + 0x200]);
     }
     printf("\n");
-
     for(int i = 0; i < 80; i++){
         memory[i + 0x50] = font[i];
     }
@@ -84,28 +86,25 @@ int main()
 
 void cycle() {
     // fetch
-    short opcode = 0x0;
-    opcode = memory[pc];
-    opcode = opcode << 8;
-    opcode = opcode | memory[pc + 1];
-    printf("0x%x\n", opcode);
+    opcode = memory[pc] << 8 | memory[pc + 1];
     pc += 2;
     // decode
     decode(opcode);
     // execute
 }
 
-void decode(short opcode) {
+void decode(unsigned short opcode) {
+    printf("\nOpcode: %x\n", opcode);
+
     int mask = 0xF000;
     int mask2 = 0x0F00;
     int mask3 = 0x00F0;
-    int mask4 = 0x000F;
-    short first = opcode & mask;
-    short second = opcode & mask2;
-    short third = opcode & mask3;
-    short fourth = opcode & mask4;
-    printf("First is 0x%x\n", first);
-    printf("First is 0x%x\n", third);
+    int mask4 = 0x0000F;
+    unsigned short first = (opcode & mask) >> 12;
+    unsigned short second = (opcode & mask2) >> 8;
+    unsigned short third = (opcode & mask3) >> 4;
+    unsigned short fourth = opcode & mask4;
+    printf("First is %x\n", first);
 
     switch (first)
     {
@@ -115,7 +114,27 @@ void decode(short opcode) {
             break;
         }
         break;
+    case 0x1:
+        // jump
+        ;
+        short addr = second | third | fourth;
+        printf("Jump to %x\n", addr);
+        break;
+    case 0x6:
+        // set register
+        printf("Set register %x to %x\n", second, (third | fourth));
+        break;
+    case 0x7:
+        printf("Add to register %x: %x\n", second, (third | fourth));
+        break;
+    case 0xA:
+        printf("Set index register %x\n", ((second | third) | fourth));
+        break;
+    case 0xD:
+        printf("Draw %x %x %x\n", second, third, fourth);
+        break;
     default:
+        printf("TBI\n");
         break;
     }
 }
