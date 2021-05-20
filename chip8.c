@@ -1,8 +1,9 @@
 #include<stdio.h>
 #include<stdlib.h>
+#include <SDL2/SDL.h>
+
 
 #include "include/chip8.h"
-#include <SDL2/SDL.h>
 
 unsigned char memory[4096] = {0};
 
@@ -41,15 +42,49 @@ unsigned short stack[16] = {0};
 
 unsigned char sp = 0;
 
+const int WIDTH = 64;
+const int HEIGHT = 32;
+
+SDL_Window *window = NULL;
+SDL_Surface *surface = NULL;
+SDL_Renderer *renderer = NULL;
+unsigned char tempwindow[64][32];
+bool draw = 0;
+
+bool init_graphics(){
+    if(SDL_Init(SDL_INIT_VIDEO) < 0) {
+        printf("Failed to init SDL with %s\n", SDL_GetError());
+        return false;
+    } else {
+        int res = SDL_CreateWindowAndRenderer(WIDTH, HEIGHT, SDL_WINDOW_SHOWN, &window, &renderer);
+        if(res) {
+            printf("Failed to create SDL window with %s\n", SDL_GetError());
+            return false;
+        } else {
+            surface = SDL_GetWindowSurface(window);
+        }
+    }
+    return true;
+}
+
+void destroy_graphics() {
+    SDL_FreeSurface(surface);
+    SDL_DestroyWindow(window);
+    SDL_Quit();
+}
+
 int main(int argc, char **argv)
 {
+    if(!init_graphics()){
+        exit(EXIT_FAILURE);
+    }
     FILE *rom;
     rom = fopen("Logo.ch8", "rb");
     long size;
     if(rom) {
         fseek(rom, 0, SEEK_END); // seek to end of file
         size = ftell(rom); // get current file pointer
-        printf("Size is %d\n", size);
+        printf("Size is %ld\n", size);
         rewind(rom);
     } else {
         exit(EXIT_FAILURE);
@@ -75,13 +110,35 @@ int main(int argc, char **argv)
     }
 
     // main loop
-    while(pc < size + 0x200) {
-        // run emulation cycle
+    bool quit = false;
+    while(!quit) {
+        SDL_Event e;
+        while(SDL_PollEvent(&e) != 0) {
+            if(e.type == SDL_QUIT){
+                quit = true;
+            }
+        }
         cycle();
+        if(draw) {
+            // draw
+            for(int i = 0; i < 64; i++) {
+                for(int j = 0; j < 32; j++) {
+                    if(tempwindow[i][j] == 0) {
+                        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+                    } else {
+                        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+                    }
+                    SDL_RenderDrawPoint(renderer, i, j);
+                }
+            }
+            SDL_RenderPresent(renderer);
+            printf("Drew something\n");
+            draw = 0;            
+        }
     }
-
     fclose(rom);
     free(buffer);
+    destroy_graphics();
     return 0;
 }
 
@@ -96,7 +153,6 @@ void cycle() {
 
 void decode(unsigned short opcode) {
     printf("\nOpcode: %x\n", opcode);
-
     int mask = 0xF000;
     int mask2 = 0x0F00;
     int mask3 = 0x00F0;
@@ -108,12 +164,20 @@ void decode(unsigned short opcode) {
     printf("Sections are %x %x %x %x\n", first, second, third, fourth);
     unsigned short addr = (second << 8) | (third << 4) | fourth;
     unsigned short value = (third << 4) | fourth;
-
+    if(opcode == 0x0) {
+        exit(EXIT_SUCCESS);
+    }
     switch (first)
     {
     case 0x0:
         if(opcode == 0x00e0) {
             printf("Clear the screen\n");
+            for(int i = 0; i < 64; i++){
+                for(int j = 0; j < 32; j++) {
+                    tempwindow[i][j] = 0;
+                }
+            }
+            draw = 1;
             break;
         }
         break;
@@ -141,6 +205,37 @@ void decode(unsigned short opcode) {
     case 0xD:
         // Draw on screen
         printf("Draw %x %x %x\n", second, third, fourth);
+        unsigned char x = v[second] % 64;
+        unsigned char y = v[third] % 32;
+        v[0xF] = 0;
+        printf("I is %x\n", ir);
+        printf("X is %x, y is %x\n", x, y);
+        for(int i = 0; i < fourth; i++) {
+            unsigned short data = memory[ir + i];
+            printf("\tData is %x\n", data);
+            for(int j = 0; j < 8; j++) {
+                if((data & (0x80 >> i)) != 0) {                    
+                    if(tempwindow[x][y] == 0) {
+                        printf("Case 1\n");
+                        tempwindow[x][y] = 1;
+                    } else {
+                        printf("Case 2\n");
+                        tempwindow[x][y] = 0;
+                        v[0xF] = 1;
+                    }
+                }
+            }
+            for(int i = 0; i < 64; i++) {
+                for(int j = 0; j < 32; j++) {
+                    printf("%d", tempwindow[i][j]);
+                }
+                printf("\n");
+            }
+            exit(EXIT_SUCCESS);
+
+        }
+
+        draw = true;
         break;
     default:
         printf("TBI\n");
