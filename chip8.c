@@ -80,6 +80,7 @@ int main(int argc, char **argv)
         exit(EXIT_FAILURE);
     }
     FILE *rom;
+    printf("%s\n", *(++argv));
     rom = fopen(*(++argv), "rb");
     long size;
     if(rom) {
@@ -88,7 +89,7 @@ int main(int argc, char **argv)
         printf("Size is %ld\n", size);
         rewind(rom);
     } else {
-        printf("Failed to open file\n");
+        printf("Failed to open");
         exit(EXIT_FAILURE);
     }
     char *buffer = malloc(size);
