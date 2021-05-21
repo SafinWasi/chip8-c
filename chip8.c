@@ -80,7 +80,7 @@ int main(int argc, char **argv)
         exit(EXIT_FAILURE);
     }
     FILE *rom;
-    rom = fopen("Logo.ch8", "rb");
+    rom = fopen(*(++argv), "rb");
     long size;
     if(rom) {
         fseek(rom, 0, SEEK_END); // seek to end of file
@@ -88,6 +88,7 @@ int main(int argc, char **argv)
         printf("Size is %ld\n", size);
         rewind(rom);
     } else {
+        printf("Failed to open file\n");
         exit(EXIT_FAILURE);
     }
     char *buffer = malloc(size);
