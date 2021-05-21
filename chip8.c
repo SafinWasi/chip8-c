@@ -185,7 +185,7 @@ void decode(unsigned short opcode) {
         // jump
         ;
         printf("Jump to %x\n", addr);
-        pc = 0x200 + addr;
+        pc =  addr;
         break;
     case 0x6:
         // set register
@@ -206,39 +206,45 @@ void decode(unsigned short opcode) {
         // Draw on screen
         printf("Draw %x %x %x\n", second, third, fourth);
         unsigned char x = v[second] % 64;
+        unsigned char oldx = x;
         unsigned char y = v[third] % 32;
         v[0xF] = 0;
         printf("I is %x\n", ir);
         printf("X is %x, y is %x\n", x, y);
         for(int i = 0; i < fourth; i++) {
             unsigned short data = memory[ir + i];
-            printf("\tData is %x\n", data);
+            printf("\tData is %x, loop %x\n", data, i);
             for(int j = 0; j < 8; j++) {
                 if((data & (0x80 >> i)) != 0) {                    
                     if(tempwindow[x][y] == 0) {
-                        printf("Case 1\n");
                         tempwindow[x][y] = 1;
                     } else {
-                        printf("Case 2\n");
                         tempwindow[x][y] = 0;
                         v[0xF] = 1;
                     }
                 }
+                x++;
             }
-            for(int i = 0; i < 64; i++) {
-                for(int j = 0; j < 32; j++) {
-                    printf("%d", tempwindow[i][j]);
-                }
-                printf("\n");
-            }
-            exit(EXIT_SUCCESS);
-
+            y++;
+            x = oldx;
+            debug_print_window();
         }
+        // exit(EXIT_SUCCESS);
 
         draw = true;
         break;
     default:
         printf("TBI\n");
+        while(1){}
         break;
+    }
+}
+
+void debug_print_window(){
+    for(int j = 0; j < 32; j++) {
+        for(int i = 0; i < 64; i++) {
+            printf("%d", tempwindow[i][j]);
+        }
+        printf("\n");
     }
 }
