@@ -214,8 +214,9 @@ void decode(unsigned short opcode) {
         for(int i = 0; i < fourth; i++) {
             unsigned short data = memory[ir + i];
             printf("\tData is %x, loop %x\n", data, i);
+            printf("\tX is %x, y is %x\n", x, y);
             for(int j = 0; j < 8; j++) {
-                if((data & (0x80 >> i)) != 0) {                    
+                if((data & (0x80 >> j)) != 0) {   
                     if(tempwindow[x][y] == 0) {
                         tempwindow[x][y] = 1;
                     } else {
@@ -229,8 +230,6 @@ void decode(unsigned short opcode) {
             x = oldx;
             debug_print_window();
         }
-        // exit(EXIT_SUCCESS);
-
         draw = true;
         break;
     default:
