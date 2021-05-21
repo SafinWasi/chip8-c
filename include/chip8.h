@@ -4,7 +4,7 @@
 
 
 void cycle();
-void decode(unsigned short opcode);
+void decodeAndExecute(unsigned short opcode);
 bool init_graphics();
 void destroy_graphics();
 void debug_print_window();

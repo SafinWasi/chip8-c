@@ -80,7 +80,6 @@ int main(int argc, char **argv)
         exit(EXIT_FAILURE);
     }
     FILE *rom;
-    printf("%s\n", *(++argv));
     rom = fopen(*(++argv), "rb");
     long size;
     if(rom) {
@@ -149,12 +148,11 @@ void cycle() {
     // fetch
     opcode = memory[pc] << 8 | memory[pc + 1];
     pc += 2;
-    // decode
-    decode(opcode);
-    // execute
+    // decode and execute
+    decodeAndExecute(opcode);
 }
 
-void decode(unsigned short opcode) {
+void decodeAndExecute(unsigned short opcode) {
     printf("\nOpcode: %x\n", opcode);
     int mask = 0xF000;
     int mask2 = 0x0F00;
@@ -167,6 +165,7 @@ void decode(unsigned short opcode) {
     printf("Sections are %x %x %x %x\n", first, second, third, fourth);
     unsigned short addr = (second << 8) | (third << 4) | fourth;
     unsigned short value = (third << 4) | fourth;
+    unsigned char s = 0x0;
     if(opcode == 0x0) {
         exit(EXIT_SUCCESS);
     }
@@ -186,7 +185,6 @@ void decode(unsigned short opcode) {
         break;
     case 0x1:
         // jump
-        ;
         printf("Jump to %x\n", addr);
         pc =  addr;
         break;
@@ -199,6 +197,79 @@ void decode(unsigned short opcode) {
         // add to register
         printf("Add to register %x: %x\n", second, value);
         v[second] += value;
+        break;
+    case 0x8:
+        // arithmetic
+        switch(fourth) {
+            case 0x0:
+                printf("Set\n");
+                s = v[third];
+                v[second] = s;
+                break;
+            case 0x1:
+                printf("OR\n");
+                s = v[second] | v[third];
+                v[second] = s;
+                break;
+            case 0x2:
+                printf("AND\n");
+                s = v[second] & v[third];
+                v[second] = s;
+                break;
+            case 0x3:
+                printf("XOR\n");
+                s = v[second] ^ v[third];
+                v[second] = s;
+                break;
+            case 0x4:
+                printf("ADD\n");
+                s = v[second] + v[third];
+                v[second] = s;
+                break;
+            case 0x5:
+                printf("SUB\n");
+                s = v[second] - v[third];
+                v[second] = s;
+                if(v[second] > v[third]) {
+                    v[0xF] = 1;
+                } else {
+                    v[0xF] = 0;
+                }
+                break;
+            case 0x7:
+                printf("SUB2\n");
+                s = v[third] - v[second];
+                v[second] = s;
+                if(v[third] > v[second]) {
+                    v[0xF] = 1;
+                } else {
+                    v[0xF] = 0;
+                }
+                break;
+            case 0x6:
+                printf("SHIFT\n");
+                // v[second] = v[third];
+                s = v[second];
+                unsigned char right = s & 0x1;
+                v[0xF] = right;
+                s = s >> 1;
+                v[second] = s;
+                break;
+            case 0xE:
+                printf("SHIFT2\n");
+                // v[second] = v[third];
+                s = v[second];
+                unsigned char left = s & 0x80;
+                if(left != 0) {
+                    left = 1;
+                } 
+                v[0xF] = left;
+                s = s << 1;
+                v[second] = s;
+                break;
+            default:
+                break;
+        }
         break;
     case 0xA:
         // set index register
