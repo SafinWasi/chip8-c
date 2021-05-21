@@ -42,13 +42,13 @@ unsigned short stack[16] = {0};
 
 unsigned char sp = 0;
 
-const int WIDTH = 64;
-const int HEIGHT = 32;
+const int WIDTH = 64 * 5;
+const int HEIGHT = 32 * 5;
 
 SDL_Window *window = NULL;
 SDL_Surface *surface = NULL;
 SDL_Renderer *renderer = NULL;
-unsigned char tempwindow[64][32];
+unsigned char tempwindow[64*5][32*5];
 bool draw = 0;
 
 bool init_graphics(){
@@ -62,6 +62,7 @@ bool init_graphics(){
             return false;
         } else {
             surface = SDL_GetWindowSurface(window);
+            SDL_SetWindowTitle(window, "chip8-c");
         }
     }
     return true;
@@ -121,8 +122,8 @@ int main(int argc, char **argv)
         cycle();
         if(draw) {
             // draw
-            for(int i = 0; i < 64; i++) {
-                for(int j = 0; j < 32; j++) {
+            for(int i = 0; i < WIDTH; i++) {
+                for(int j = 0; j < HEIGHT; j++) {
                     if(tempwindow[i][j] == 0) {
                         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
                     } else {
@@ -218,9 +219,9 @@ void decode(unsigned short opcode) {
             for(int j = 0; j < 8; j++) {
                 if((data & (0x80 >> j)) != 0) {   
                     if(tempwindow[x][y] == 0) {
-                        tempwindow[x][y] = 1;
+                        tempwindow[x*5][y*5] = 1;
                     } else {
-                        tempwindow[x][y] = 0;
+                        tempwindow[x*5][y*5] = 0;
                         v[0xF] = 1;
                     }
                 }
@@ -228,7 +229,7 @@ void decode(unsigned short opcode) {
             }
             y++;
             x = oldx;
-            debug_print_window();
+            //debug_print_window();
         }
         draw = true;
         break;
