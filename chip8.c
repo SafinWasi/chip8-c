@@ -1,6 +1,7 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include <SDL2/SDL.h>
+#include<time.h>
 
 
 #include "include/chip8.h"
@@ -112,6 +113,8 @@ int main(int argc, char **argv)
     }
     // main loop
     bool quit = false;
+    int count = 0;
+    time_t start = time(NULL);
     while(!quit) {
         SDL_Event e;
         while(SDL_PollEvent(&e) != 0) {
@@ -120,6 +123,7 @@ int main(int argc, char **argv)
             }
         }
         cycle();
+        count++;
         if(draw) {
             // draw
             for(int i = 0; i < WIDTH; i++) {
@@ -136,7 +140,11 @@ int main(int argc, char **argv)
             printf("Drew something\n");
             draw = 0;            
         }
+
     }
+    time_t end = time(NULL);
+
+    printf("Start: %I64d, end: %I64dd, count: %d, time: %I64d\n", start, end, count, end - start);
     fclose(rom);
     free(buffer);
     destroy_graphics();
