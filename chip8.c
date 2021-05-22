@@ -368,12 +368,14 @@ void decodeAndExecute(unsigned short opcode) {
                 break;
             // add to I
             case 0x1E:
-                s = ir;
-                if((s + v[second]) > 0x1000) {
+                ;
+                unsigned short sum = ir;
+                printf("First and second: %x %x\n", s, v[second]);
+                if((sum + v[second]) > 0x0FFF) {
                     v[0xF] = 1;
                 }
-                s += v[second];
-                ir = s;
+                sum += v[second];
+                ir = sum;
                 break;
             // get key
             case 0x0A:
