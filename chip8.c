@@ -1,7 +1,8 @@
-#include<stdio.h>
-#include<stdlib.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <SDL2/SDL.h>
-#include<time.h>
+#include <time.h>
+#include <unistd.h>
 
 
 #include "include/chip8.h"
@@ -122,8 +123,23 @@ int main(int argc, char **argv)
                 quit = true;
             }
         }
+        if(time(NULL) - start == 1) {
+            delay_timer -= 60;
+            if(delay_timer < 0) {
+                delay_timer = 0;
+            }
+            sound_timer -= 60;
+            if(sound_timer < 0) {
+                sound_timer = 0;
+            }
+            start = time(NULL);
+        }
         cycle();
         count++;
+        if(count == 175) {
+            usleep(250000);
+            count = 0;
+        }
         if(draw) {
             // draw
             for(int i = 0; i < WIDTH; i++) {
@@ -142,9 +158,6 @@ int main(int argc, char **argv)
         }
 
     }
-    time_t end = time(NULL);
-
-    printf("Start: %I64d, end: %I64dd, count: %d, time: %I64d\n", start, end, count, end - start);
     fclose(rom);
     free(buffer);
     destroy_graphics();
