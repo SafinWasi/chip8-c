@@ -110,7 +110,6 @@ int main(int argc, char **argv)
     for(int i = 0; i < 80; i++){
         memory[i + 0x50] = font[i];
     }
-
     // main loop
     bool quit = false;
     while(!quit) {
@@ -167,7 +166,7 @@ void decodeAndExecute(unsigned short opcode) {
     unsigned short value = (third << 4) | fourth;
     unsigned char s = 0x0;
     if(opcode == 0x0) {
-        exit(EXIT_SUCCESS);
+        while(1){}
     }
     switch (first)
     {
@@ -181,12 +180,46 @@ void decodeAndExecute(unsigned short opcode) {
             }
             draw = 1;
             break;
+        } else if (opcode == 0x00EE) {
+            printf("Return from subroutine\n");
+            pc = stack[sp - 1];
+            sp--;
+            if(sp < 0) {
+                printf("Stack bound exceeded negative\n");
+                exit(EXIT_FAILURE);
+            }
         }
         break;
     case 0x1:
         // jump
         printf("Jump to %x\n", addr);
         pc =  addr;
+        break;
+    case 0x2:
+        // call subroutine
+        printf("Call %x\n", addr);
+        printf("PC was %x\n", pc);
+        stack[sp] = pc;
+        sp++;
+        pc = addr;
+        break;
+    case 0x3:
+        printf("Skip1\n");
+        if(v[second] == value) {
+            pc += 2;
+        }
+        break;
+    case 0x4:
+        printf("Skip2\n");
+        if(v[second] != value) {
+            pc += 2;
+        }
+        break;
+    case 0x5:
+        printf("Skip3\n");
+        if(v[second] == v[third]) {
+            pc += 2;
+        }
         break;
     case 0x6:
         // set register
@@ -228,23 +261,29 @@ void decodeAndExecute(unsigned short opcode) {
                 break;
             case 0x5:
                 printf("SUB\n");
+                printf("%x %x\n", v[second], v[third]);
                 s = v[second] - v[third];
-                v[second] = s;
-                if(v[second] > v[third]) {
+                printf("%x\n", s);
+                //v[second] = s;
+                if(v[second] >= v[third]) {
+                    printf("B\n");
                     v[0xF] = 1;
                 } else {
+                    printf("A\n");
                     v[0xF] = 0;
                 }
+                v[second] = s;
+                //while(1){}
                 break;
             case 0x7:
                 printf("SUB2\n");
                 s = v[third] - v[second];
-                v[second] = s;
-                if(v[third] > v[second]) {
+                if(v[third] >= v[second]) {
                     v[0xF] = 1;
                 } else {
                     v[0xF] = 0;
                 }
+                v[second] = s;
                 break;
             case 0x6:
                 printf("SHIFT\n");
@@ -269,6 +308,11 @@ void decodeAndExecute(unsigned short opcode) {
                 break;
             default:
                 break;
+        }
+        break;
+    case 0x9:
+        if(v[second] != v[third]) {
+            pc += 2;
         }
         break;
     case 0xA:
@@ -305,6 +349,67 @@ void decodeAndExecute(unsigned short opcode) {
             //debug_print_window();
         }
         draw = true;
+        break;
+    case 0xF:
+        printf("OS stuff\n");
+        switch(value) {
+            // timers
+            case 0x7:
+                ;
+                v[second] = delay_timer;
+                break;
+            case 0x15:
+                ;
+                delay_timer = v[second];
+                break;
+            case 0x18:
+                ;
+                sound_timer = v[second];
+                break;
+            // add to I
+            case 0x1E:
+                s = ir;
+                if((s + v[second]) > 0x1000) {
+                    v[0xF] = 1;
+                }
+                s += v[second];
+                ir = s;
+                break;
+            // get key
+            case 0x0A:
+                break;
+            // Font character
+            case 0x29:
+                printf("Font\n");
+                unsigned char c = v[second];
+                ir = 0x50 + (5 * c);
+                break;
+            // Binary coded decimal conversion
+            case 0x33:
+                ;
+                unsigned char num = v[second];
+                unsigned char hun = num / 100;
+                unsigned char ten = (num % 100) / 10;
+                unsigned char ones = num % 10;
+                printf("%d %d %d %d\n", num, hun, ten, ones);
+                memory[ir] = hun;
+                memory[ir + 1] = ten;
+                memory[ir + 2] = ones;
+                break;
+            // Store and load memory
+            case 0x55:
+                printf("Store\n");
+                for(int i = 0; i <= second; i++) {
+                    memory[ir + i] = v[i];
+                }
+                break;
+            case 0x65:
+                printf("Load\n");
+                for(int i = 0; i <= second; i++) {
+                    v[i] = memory[ir + i];
+                }
+                break;
+        }
         break;
     default:
         printf("TBI\n");
