@@ -7,6 +7,8 @@
 
 #include "include/chip8.h"
 
+bool debug = false;
+
 unsigned char memory[4096] = {0};
 
 unsigned short opcode = 0;
@@ -39,6 +41,8 @@ unsigned char font[80] = {
     0xF0, 0x80, 0xF0, 0x80, 0xF0, // E
     0xF0, 0x80, 0xF0, 0x80, 0x80  // F
 };
+
+unsigned char *keys;
 
 unsigned short stack[16] = {0};
 
@@ -112,6 +116,10 @@ int main(int argc, char **argv)
     for(int i = 0; i < 80; i++){
         memory[i + 0x50] = font[i];
     }
+
+    // get keyboard state
+    keys = SDL_GetKeyboardState(NULL);
+
     // main loop
     bool quit = false;
     int count = 0;
@@ -136,10 +144,10 @@ int main(int argc, char **argv)
         }
         cycle();
         count++;
-        if(count == 175) {
-            usleep(250000);
-            count = 0;
-        }
+        // if(count == 175) {
+        //     usleep(250000);
+        //     count = 0;
+        // }
         if(draw) {
             // draw
             for(int i = 0; i < WIDTH; i++) {
@@ -371,6 +379,28 @@ void decodeAndExecute(unsigned short opcode) {
         }
         draw = true;
         break;
+    case 0xE:
+        printf("Skip if key: %x\n", second);
+        SDL_PumpEvents();
+        debug = 1;
+        //while(1){}
+        switch (third)
+        {
+        case 9:
+            // skip if pressed
+            if(keyIsPressed(second)) {
+                pc += 2;
+            }
+            break;
+        case 0xA:
+            printf("Case 2\n");
+            if(!keyIsPressed(second)) {
+                pc += 2;
+            }
+            // skip if not pressed
+            break;
+        }
+        break;
     case 0xF:
         printf("OS stuff\n");
         switch(value) {
@@ -400,6 +430,8 @@ void decodeAndExecute(unsigned short opcode) {
                 break;
             // get key
             case 0x0A:
+                printf("Get key\n");
+                while(1){}
                 break;
             // Font character
             case 0x29:
@@ -448,4 +480,20 @@ void debug_print_window(){
         }
         printf("\n");
     }
+}
+
+bool keyIsPressed(unsigned char c) {
+    bool pressed = false;
+    if(0 <= c && c <= 9) {
+        // number
+        if(keys[c + 48]) {
+            pressed = true;
+        }
+    } else {
+        // letter
+        if(keys[c + 87]) {
+            pressed = true;
+        }
+    }
+    return pressed;
 }
